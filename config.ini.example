@@ -1,0 +1,35 @@
+# AI Job Hunting System Configuration
+# Copy this file to config.ini and fill in your details
+
+[personal]
+name = "Your Name"
+email = "your.email@example.com"
+phone = "+1 555-000-0000"
+location = "Your City (Open to relocation)"
+
+[targets]
+salary_min = 175000
+salary_max = 280000
+preferred_locations = ["San Francisco", "Seattle", "Boston", "Austin"]
+company_sizes = ["startup", "mid", "large"]
+
+[search_keywords]
+primary = ["autonomous systems", "robotics", "fleet management", "ROS2"]
+secondary = ["real-time systems", "remote operations", "manufacturing automation"]
+technologies = ["ReactJS", "Python", "C++", "Docker", "Kubernetes"]
+
+[automation]
+job_search_time = "09:00"
+followup_time = "11:00"
+resume_optimization_day = "Monday"
+resume_optimization_time = "10:00"
+
+[notifications]
+telegram_enabled = true
+email_enabled = false
+desktop_enabled = true
+
+[companies]
+tier1 = ["Waymo", "Tesla", "Boston Dynamics", "Aurora", "Cruise"]
+tier2 = ["NVIDIA", "Amazon Robotics", "Uber ATG", "Zoox", "Rivian"]
+tier3 = ["Apple", "Microsoft", "Google", "Shopify", "Palantir"]

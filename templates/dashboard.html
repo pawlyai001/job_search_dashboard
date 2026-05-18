@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Job Hunting Dashboard - Zhu Yuting</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="https://unpkg.com/sortablejs@latest/Sortable.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            text-align: center;
+            color: #2d3748;
+            margin-bottom: 20px;
+            font-size: 2.5em;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .ai-agents {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        .agent-status {
+            background: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .agent-status.active {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #48bb78;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .main-container {
+            padding: 20px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        .kanban-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            min-height: 600px;
+        }
+        
+        .kanban-column {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .column-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1.1em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .target-header { background: #e2e8f0; color: #2d3748; }
+        .applied-header { background: #fed7d7; color: #c53030; }
+        .interview-header { background: #bee3f8; color: #2b6cb0; }
+        .offer-header { background: #c6f6d5; color: #38a169; }
+        
+        .application-card {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            cursor: move;
+            transition: all 0.3s ease;
+            border-left: 4px solid #667eea;
+        }
+        
+        .application-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .card-company {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+        
+        .card-position {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+        
+        .card-salary {
+            background: #f7fafc;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            color: #38a169;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 8px;
+        }
+        
+        .card-location {
+            font-size: 0.8em;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        
+        .card-notes {
+            font-size: 0.8em;
+            color: #555;
+            font-style: italic;
+            background: #f7fafc;
+            padding: 8px;
+            border-radius: 4px;
+            margin-top: 8px;
+        }
+        
+        .fit-score {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.7em;
+            font-weight: bold;
+            float: right;
+        }
+        
+        .priority-high { border-left-color: #e53e3e; }
+        .priority-medium { border-left-color: #dd6b20; }
+        .priority-low { border-left-color: #38a169; }
+        
+        .action-buttons {
+            margin-top: 10px;
+            display: flex;
+            gap: 5px;
+        }
+        
+        .btn {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.7em;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        
+        .btn-primary { background: #667eea; color: white; }
+        .btn-success { background: #48bb78; color: white; }
+        .btn-warning { background: #ed8936; color: white; }
+        
+        .btn:hover {
+            opacity: 0.8;
+            transform: translateY(-1px);
+        }
+        
+        @media (max-width: 1200px) {
+            .kanban-board {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .kanban-board {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        
+        .sortable-ghost {
+            opacity: 0.4;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: rgba(255,255,255,0.8);
+            background: rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚀 AI Job Hunting Command Center</h1>
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="total-targets">0</div>
+                <div class="stat-label">Target Companies</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="total-applied">0</div>
+                <div class="stat-label">Applications Sent</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="total-interviews">0</div>
+                <div class="stat-label">Interviews Scheduled</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="response-rate">0%</div>
+                <div class="stat-label">Response Rate</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="total-offers">0</div>
+                <div class="stat-label">Job Offers</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="avg-salary">$0k</div>
+                <div class="stat-label">Avg Salary Range</div>
+            </div>
+        </div>
+        
+        <div class="ai-agents">
+            <div class="agent-status active">
+                <div class="status-dot"></div>
+                Daily Job Search
+            </div>
+            <div class="agent-status active">
+                <div class="status-dot"></div>
+                Follow-up Manager
+            </div>
+            <div class="agent-status active">
+                <div class="status-dot"></div>
+                Resume Optimizer
+            </div>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="kanban-board">
+            <!-- Target Companies Column -->
+            <div class="kanban-column">
+                <div class="column-header target-header">🎯 Target Companies</div>
+                <div id="target-column" class="sortable-column"></div>
+            </div>
+            
+            <!-- Applied Column -->
+            <div class="kanban-column">
+                <div class="column-header applied-header">📤 Applied</div>
+                <div id="applied-column" class="sortable-column"></div>
+            </div>
+            
+            <!-- Interview Column -->
+            <div class="kanban-column">
+                <div class="column-header interview-header">🎤 Interview</div>
+                <div id="interview-column" class="sortable-column"></div>
+            </div>
+            
+            <!-- Offers Column -->
+            <div class="kanban-column">
+                <div class="column-header offer-header">🎉 Offers</div>
+                <div id="offer-column" class="sortable-column"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>🤖 AI-Powered Job Hunting System for Autonomous Systems Engineer</p>
+        <p>Real-time updates • Multi-platform search • Intelligent matching</p>
+    </div>
+
+    <script>
+        // Socket.io connection
+        const socket = io();
+        
+        // Load initial data
+        async function loadDashboard() {
+            try {
+                // Load statistics
+                const statsResponse = await fetch('/api/stats');
+                const stats = await statsResponse.json();
+                updateStats(stats);
+                
+                // Load applications
+                const appsResponse = await fetch('/api/applications');
+                const applications = await appsResponse.json();
+                renderApplications(applications);
+                
+                // Load AI agents status
+                const agentsResponse = await fetch('/api/agents');
+                const agents = await agentsResponse.json();
+                updateAgentsStatus(agents);
+                
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            }
+        }
+        
+        function updateStats(stats) {
+            document.getElementById('total-targets').textContent = stats.total_targets;
+            document.getElementById('total-applied').textContent = stats.total_applied;
+            document.getElementById('total-interviews').textContent = stats.total_interviews;
+            document.getElementById('total-offers').textContent = stats.total_offers;
+            document.getElementById('response-rate').textContent = stats.response_rate + '%';
+            
+            const avgSalary = Math.round((stats.avg_salary_min + stats.avg_salary_max) / 2000);
+            document.getElementById('avg-salary').textContent = '$' + avgSalary + 'k';
+        }
+        
+        function renderApplications(applications) {
+            const columns = ['target', 'applied', 'interview', 'offer'];
+            
+            columns.forEach(status => {
+                const column = document.getElementById(status + '-column');
+                column.innerHTML = '';
+                
+                applications[status].forEach(app => {
+                    const card = createApplicationCard(app);
+                    column.appendChild(card);
+                });
+            });
+            
+            // Initialize sortable for drag & drop
+            initializeSortable();
+        }
+        
+        function createApplicationCard(app) {
+            const card = document.createElement('div');
+            card.className = `application-card priority-${app.priority}`;
+            card.dataset.id = app.id;
+            card.dataset.status = app.status;
+            
+            const salaryText = app.salary_min && app.salary_max 
+                ? `$${Math.round(app.salary_min/1000)}k - $${Math.round(app.salary_max/1000)}k`
+                : 'Salary not specified';
+            
+            card.innerHTML = `
+                <div class="fit-score">${app.fit_score}%</div>
+                <div class="card-company">${app.company}</div>
+                <div class="card-position">${app.position}</div>
+                <div class="card-salary">${salaryText}</div>
+                <div class="card-location">📍 ${app.location || 'Location TBD'}</div>
+                ${app.applied_date ? `<div style="font-size: 0.8em; color: #666;">Applied: ${app.applied_date}</div>` : ''}
+                ${app.interview_date ? `<div style="font-size: 0.8em; color: #2b6cb0; font-weight: bold;">Interview: ${app.interview_date}</div>` : ''}
+                ${app.notes ? `<div class="card-notes">${app.notes}</div>` : ''}
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="exportResume(${app.id})">📄 Resume</button>
+                    <button class="btn btn-success" onclick="submitApplication(${app.id})">📤 Apply</button>
+                </div>
+            `;
+            
+            return card;
+        }
+        
+        function initializeSortable() {
+            const columns = ['target', 'applied', 'interview', 'offer'];
+            
+            columns.forEach(status => {
+                const column = document.getElementById(status + '-column');
+                new Sortable(column, {
+                    group: 'applications',
+                    animation: 150,
+                    ghostClass: 'sortable-ghost',
+                    onEnd: function(evt) {
+                        const appId = evt.item.dataset.id;
+                        const newStatus = evt.to.id.replace('-column', '');
+                        
+                        // Update application status
+                        moveApplication(appId, newStatus);
+                    }
+                });
+            });
+        }
+        
+        async function moveApplication(appId, newStatus) {
+            try {
+                const response = await fetch('/api/move_application', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        id: appId,
+                        status: newStatus
+                    })
+                });
+                
+                if (response.ok) {
+                    // Refresh dashboard to update stats
+                    setTimeout(loadDashboard, 500);
+                }
+            } catch (error) {
+                console.error('Error moving application:', error);
+            }
+        }
+        
+        async function exportResume(appId) {
+            try {
+                const response = await fetch(`/api/export_resume/${appId}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(`✅ ${result.message}`);
+                    // In real implementation, this would download the PDF
+                } else {
+                    alert('❌ Error exporting resume');
+                }
+            } catch (error) {
+                console.error('Error exporting resume:', error);
+            }
+        }
+        
+        function submitApplication(appId) {
+            // Simulate application submission
+            alert('🚀 Application submitted! Moving to Applied column...');
+            
+            // Move card to applied column
+            const card = document.querySelector(`[data-id="${appId}"]`);
+            if (card) {
+                const appliedColumn = document.getElementById('applied-column');
+                appliedColumn.appendChild(card);
+                moveApplication(appId, 'applied');
+            }
+        }
+        
+        function updateAgentsStatus(agents) {
+            // Update AI agents status (placeholder for now)
+            console.log('AI Agents Status:', agents);
+        }
+        
+        // Socket.io event listeners
+        socket.on('connect', function() {
+            console.log('Connected to AI Job Hunting Dashboard');
+        });
+        
+        socket.on('application_moved', function(data) {
+            console.log('Application moved:', data);
+            // Refresh dashboard on real-time updates
+            loadDashboard();
+        });
+        
+        socket.on('heartbeat', function(data) {
+            console.log('Dashboard heartbeat:', data.timestamp);
+        });
+        
+        // Initialize dashboard on page load
+        document.addEventListener('DOMContentLoaded', loadDashboard);
+        
+        // Refresh dashboard every 60 seconds
+        setInterval(loadDashboard, 60000);
+    </script>
+</body>
+</html>
