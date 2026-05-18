@@ -4,6 +4,9 @@ config.ini
 # Claude Code local settings
 .claude/
 
+# Environment variables (contains API keys)
+.env
+
 # Database (local data, not shared)
 *.db
 
