@@ -68,31 +68,22 @@ def check_dependencies():
 
 def check_database():
     """Check database status"""
-    db_path = './job_database.db'
-    
-    if os.path.exists(db_path):
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        
-        # Count applications
-        cursor.execute('SELECT COUNT(*) FROM applications')
-        app_count = cursor.fetchone()[0]
-        
-        # Count by status
-        cursor.execute('SELECT status, COUNT(*) FROM applications GROUP BY status')
-        status_counts = dict(cursor.fetchall())
-        
-        conn.close()
-        
-        print(f"📊 Database Status:")
-        print(f"   • Total Applications: {app_count}")
-        print(f"   • Targets: {status_counts.get('target', 0)}")
-        print(f"   • Applied: {status_counts.get('applied', 0)}")
-        print(f"   • Interviews: {status_counts.get('interview', 0)}")
-        print(f"   • Offers: {status_counts.get('offer', 0)}")
-        
-    else:
-        print("📋 Fresh database will be created on first run")
+    from app import init_database
+    init_database()
+
+    conn = sqlite3.connect('./job_applications.db')
+    cursor = conn.cursor()
+    cursor.execute('SELECT status, COUNT(*) FROM applications GROUP BY status')
+    status_counts = dict(cursor.fetchall())
+    total = sum(status_counts.values())
+    conn.close()
+
+    print(f"📊 Database Status:")
+    print(f"   • Total Applications: {total}")
+    print(f"   • Targets: {status_counts.get('target', 0)}")
+    print(f"   • Applied: {status_counts.get('applied', 0)}")
+    print(f"   • Interviews: {status_counts.get('interview', 0)}")
+    print(f"   • Offers: {status_counts.get('offer', 0)}")
 
 def show_access_info():
     """Show access information"""
@@ -137,8 +128,9 @@ def main():
     
     # Start the Flask application
     try:
-        from app import app, socketio
-        socketio.run(app, debug=False, host='0.0.0.0', port=5000)
+        from app import app, init_database
+        init_database()
+        app.run(debug=False, host='0.0.0.0', port=5000)
     except KeyboardInterrupt:
         print("\n\n🛑 Dashboard stopped by user")
         print("💼 Your job search continues with scheduled AI agents!")

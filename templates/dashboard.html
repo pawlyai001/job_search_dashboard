@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AI Job Hunting Dashboard - Zhu Yuting</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <script src="https://unpkg.com/sortablejs@latest/Sortable.min.js"></script>
     <style>
         * {
@@ -348,85 +347,67 @@
     </div>
 
     <script>
-        // Socket.io connection
-        const socket = io();
-        
-        // Load initial data
         async function loadDashboard() {
             try {
-                // Load statistics
-                const statsResponse = await fetch('/api/stats');
-                const stats = await statsResponse.json();
+                const [statsRes, appsRes] = await Promise.all([
+                    fetch('/api/stats'),
+                    fetch('/api/applications'),
+                ]);
+                const stats = await statsRes.json();
+                const applications = await appsRes.json();
                 updateStats(stats);
-                
-                // Load applications
-                const appsResponse = await fetch('/api/applications');
-                const applications = await appsResponse.json();
                 renderApplications(applications);
-                
-                // Load AI agents status
-                const agentsResponse = await fetch('/api/agents');
-                const agents = await agentsResponse.json();
-                updateAgentsStatus(agents);
-                
             } catch (error) {
                 console.error('Error loading dashboard:', error);
             }
         }
-        
+
         function updateStats(stats) {
             document.getElementById('total-targets').textContent = stats.total_targets;
             document.getElementById('total-applied').textContent = stats.total_applied;
             document.getElementById('total-interviews').textContent = stats.total_interviews;
             document.getElementById('total-offers').textContent = stats.total_offers;
             document.getElementById('response-rate').textContent = stats.response_rate + '%';
-            
-            const avgSalary = Math.round((stats.avg_salary_min + stats.avg_salary_max) / 2000);
-            document.getElementById('avg-salary').textContent = '$' + avgSalary + 'k';
+            document.getElementById('avg-salary').textContent = stats.total_targets + stats.total_applied + stats.total_interviews + stats.total_offers + ' total';
         }
-        
+
         function renderApplications(applications) {
+            // applications is a flat array — group by status
+            const grouped = { target: [], applied: [], interview: [], offer: [] };
+            applications.forEach(app => {
+                if (grouped[app.status]) grouped[app.status].push(app);
+            });
+
             const columns = ['target', 'applied', 'interview', 'offer'];
-            
             columns.forEach(status => {
                 const column = document.getElementById(status + '-column');
                 column.innerHTML = '';
-                
-                applications[status].forEach(app => {
-                    const card = createApplicationCard(app);
-                    column.appendChild(card);
-                });
+                grouped[status].forEach(app => column.appendChild(createApplicationCard(app)));
             });
-            
-            // Initialize sortable for drag & drop
+
             initializeSortable();
         }
-        
+
         function createApplicationCard(app) {
             const card = document.createElement('div');
-            card.className = `application-card priority-${app.priority}`;
+            card.className = 'application-card priority-medium';
             card.dataset.id = app.id;
             card.dataset.status = app.status;
-            
-            const salaryText = app.salary_min && app.salary_max 
-                ? `$${Math.round(app.salary_min/1000)}k - $${Math.round(app.salary_max/1000)}k`
-                : 'Salary not specified';
-            
+
             card.innerHTML = `
-                <div class="fit-score">${app.fit_score}%</div>
+                <div class="fit-score">${app.match_score}%</div>
                 <div class="card-company">${app.company}</div>
                 <div class="card-position">${app.position}</div>
-                <div class="card-salary">${salaryText}</div>
+                ${app.salary ? `<div class="card-salary">${app.salary}</div>` : ''}
                 <div class="card-location">📍 ${app.location || 'Location TBD'}</div>
-                ${app.applied_date ? `<div style="font-size: 0.8em; color: #666;">Applied: ${app.applied_date}</div>` : ''}
-                ${app.interview_date ? `<div style="font-size: 0.8em; color: #2b6cb0; font-weight: bold;">Interview: ${app.interview_date}</div>` : ''}
+                ${app.applied_date ? `<div style="font-size:0.8em;color:#666;">Applied: ${app.applied_date}</div>` : ''}
                 ${app.notes ? `<div class="card-notes">${app.notes}</div>` : ''}
+                ${app.job_url && app.job_url !== '#' ? `<div class="action-buttons"><a class="btn btn-primary" href="${app.job_url}" target="_blank">🔗 View Job</a></div>` : ''}
                 <div class="action-buttons">
-                    <button class="btn btn-primary" onclick="exportResume(${app.id})">📄 Resume</button>
                     <button class="btn btn-success" onclick="submitApplication(${app.id})">📤 Apply</button>
                 </div>
             `;
-            
+
             return card;
         }
         
@@ -472,22 +453,6 @@
             }
         }
         
-        async function exportResume(appId) {
-            try {
-                const response = await fetch(`/api/export_resume/${appId}`);
-                const result = await response.json();
-                
-                if (result.success) {
-                    alert(`✅ ${result.message}`);
-                    // In real implementation, this would download the PDF
-                } else {
-                    alert('❌ Error exporting resume');
-                }
-            } catch (error) {
-                console.error('Error exporting resume:', error);
-            }
-        }
-        
         function submitApplication(appId) {
             // Simulate application submission
             alert('🚀 Application submitted! Moving to Applied column...');
@@ -501,31 +466,11 @@
             }
         }
         
-        function updateAgentsStatus(agents) {
-            // Update AI agents status (placeholder for now)
-            console.log('AI Agents Status:', agents);
-        }
-        
-        // Socket.io event listeners
-        socket.on('connect', function() {
-            console.log('Connected to AI Job Hunting Dashboard');
-        });
-        
-        socket.on('application_moved', function(data) {
-            console.log('Application moved:', data);
-            // Refresh dashboard on real-time updates
-            loadDashboard();
-        });
-        
-        socket.on('heartbeat', function(data) {
-            console.log('Dashboard heartbeat:', data.timestamp);
-        });
-        
         // Initialize dashboard on page load
         document.addEventListener('DOMContentLoaded', loadDashboard);
-        
-        // Refresh dashboard every 60 seconds
-        setInterval(loadDashboard, 60000);
+
+        // Auto-fetch new jobs every 15 seconds
+        setInterval(loadDashboard, 15000);
     </script>
 </body>
 </html>
