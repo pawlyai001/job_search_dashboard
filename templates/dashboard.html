@@ -317,44 +317,78 @@
         .modal-close { background: none; border: none; color: white; font-size: 1.4em; cursor: pointer; }
         .modal-body { padding: 24px; max-height: 75vh; overflow-y: auto; }
 
-        /* Diff view */
+        /* Git-style diff view */
         .diff-card {
-            border: 1px solid #e2e8f0; border-radius: 10px;
+            border: 1px solid #d0d7de; border-radius: 8px;
             margin-bottom: 16px; overflow: hidden;
+            font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+            font-size: 0.82em;
         }
         .diff-card-header {
-            background: #f7fafc; padding: 10px 16px;
-            font-size: 0.8em; font-weight: bold; color: #4a5568;
-            border-bottom: 1px solid #e2e8f0;
+            background: #f6f8fa; padding: 8px 16px;
+            font-size: 0.85em; font-weight: 600; color: #57606a;
+            border-bottom: 1px solid #d0d7de;
             display: flex; justify-content: space-between; align-items: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
-        .diff-card-header.accepted { background: #f0fff4; color: #38a169; }
-        .diff-card-header.skipped { background: #fff5f5; color: #e53e3e; }
+        .diff-card-header.accepted { background: #dafbe1; color: #1a7f37; border-color: #aceebb; }
+        .diff-card-header.skipped  { background: #ffebe9; color: #cf222e; border-color: #ffcecb; }
+        .edit-hint { font-size: 0.75em; opacity: 0.7; font-weight: normal; }
+
+        /* Remove line */
         .diff-remove {
-            background: #fff5f5; padding: 10px 16px;
-            font-size: 0.85em; font-family: monospace; white-space: pre-wrap;
-            border-bottom: 1px solid #fed7d7; color: #c53030;
+            display: flex; background: #ffebe9;
+            border-bottom: 1px solid #ffcecb;
         }
-        .diff-remove::before { content: '− '; font-weight: bold; }
-        .diff-add {
-            background: #f0fff4; padding: 10px 16px;
-            font-size: 0.85em; font-family: monospace; white-space: pre-wrap;
-            color: #276749;
+        .diff-prefix-remove {
+            min-width: 32px; padding: 8px 0; text-align: center;
+            color: #cf222e; font-weight: bold; user-select: none;
+            border-right: 1px solid #ffcecb; background: #ffd7d5;
         }
-        .diff-add::before { content: '+ '; font-weight: bold; }
+        .diff-remove-text {
+            flex: 1; padding: 8px 12px; color: #82071e;
+            white-space: pre-wrap; text-decoration: line-through; opacity: 0.75;
+        }
+
+        /* Add line — editable */
+        .diff-add-row {
+            display: flex; background: #e6ffec;
+        }
+        .diff-prefix-add {
+            min-width: 32px; padding: 8px 0; text-align: center;
+            color: #1a7f37; font-weight: bold; user-select: none;
+            border-right: 1px solid #aceebb; background: #ccffd8;
+        }
+        .diff-add-edit {
+            flex: 1; padding: 8px 12px; color: #116329;
+            white-space: pre-wrap; outline: none; cursor: text;
+            min-height: 36px; border-left: 3px solid transparent;
+            transition: background 0.15s, border-color 0.15s;
+            line-height: 1.6;
+        }
+        .diff-add-edit:focus {
+            background: #d1fae5; border-left-color: #059669;
+        }
+        .diff-add-edit:empty::before {
+            content: 'Type your edit here…'; color: #6ee7b7; font-style: italic;
+        }
+
         .diff-reason {
-            padding: 8px 16px; font-size: 0.78em;
-            color: #718096; background: #fafafa; border-top: 1px solid #e2e8f0;
+            padding: 7px 16px; font-size: 0.78em; color: #57606a;
+            background: #f6f8fa; border-top: 1px solid #d0d7de;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             font-style: italic;
         }
         .diff-actions {
-            padding: 10px 16px; display: flex; gap: 8px;
-            border-top: 1px solid #e2e8f0; background: #fafafa;
+            padding: 8px 16px; display: flex; gap: 8px;
+            border-top: 1px solid #d0d7de; background: #f6f8fa;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
-        .btn-accept { background: #48bb78; color: white; border: none; border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 0.82em; }
-        .btn-skip  { background: #fc8181; color: white; border: none; border-radius: 6px; padding: 6px 14px; cursor: pointer; font-size: 0.82em; }
-        .btn-accept:hover { background: #38a169; }
-        .btn-skip:hover   { background: #e53e3e; }
+        .btn-accept { background: #2da44e; color: white; border: none; border-radius: 6px; padding: 5px 14px; cursor: pointer; font-size: 0.82em; font-weight: 600; }
+        .btn-skip   { background: white; color: #cf222e; border: 1px solid #cf222e; border-radius: 6px; padding: 5px 14px; cursor: pointer; font-size: 0.82em; }
+        .btn-accept:hover { background: #2c974b; }
+        .btn-skip:hover   { background: #ffebe9; }
+
         .modal-footer {
             padding: 16px 24px; border-top: 1px solid #e2e8f0;
             display: flex; justify-content: flex-end; gap: 10px; align-items: center;
@@ -364,9 +398,7 @@
             border-radius: 8px; padding: 10px 20px; cursor: pointer;
             text-decoration: none; font-size: 0.9em; display: inline-block;
         }
-        .loading-spinner {
-            text-align: center; padding: 40px; color: #667eea; font-size: 1em;
-        }
+        .loading-spinner { text-align: center; padding: 40px; color: #667eea; }
         .no-resume-warning {
             background: #fffaf0; border: 1px solid #f6ad55; border-radius: 8px;
             padding: 16px; margin-bottom: 16px; font-size: 0.9em; color: #744210;
@@ -617,10 +649,21 @@
 
             card.innerHTML = `
                 <div class="diff-card-header ${headerClass}">
-                    <span>📝 ${section}${statusLabel}</span>
+                    <span>@@ ${section}${statusLabel}</span>
+                    <span class="edit-hint">✏️ click green to edit before accepting</span>
                 </div>
-                ${original ? `<div class="diff-remove">${escapeHtml(original)}</div>` : ''}
-                <div class="diff-add">${escapeHtml(suggested)}</div>
+                ${original ? `
+                <div class="diff-remove">
+                    <div class="diff-prefix-remove">−</div>
+                    <div class="diff-remove-text">${escapeHtml(original)}</div>
+                </div>` : ''}
+                <div class="diff-add-row">
+                    <div class="diff-prefix-add">+</div>
+                    <div class="diff-add-edit"
+                         id="diff-edit-${id}"
+                         contenteditable="true"
+                         spellcheck="true">${escapeHtml(suggested)}</div>
+                </div>
                 <div class="diff-reason">💡 ${reason}</div>
                 <div class="diff-actions">
                     <button class="btn-accept" onclick="acceptSuggestion(${id}, true)">✅ Accept</button>
@@ -631,10 +674,12 @@
         }
 
         async function acceptSuggestion(id, accepted) {
+            const editEl = document.getElementById(`diff-edit-${id}`);
+            const editedText = editEl ? editEl.innerText.trim() : null;
             await fetch(`/api/suggestions/${id}/accept`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ accepted })
+                body: JSON.stringify({ accepted, edited_text: editedText })
             });
             // Update card header
             const card = document.getElementById(`diff-${id}`);

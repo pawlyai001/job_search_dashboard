@@ -217,10 +217,17 @@ def get_suggestions(job_id):
 
 @app.route('/api/suggestions/<int:suggestion_id>/accept', methods=['POST'])
 def accept_suggestion(suggestion_id):
-    accepted = request.json.get('accepted', True)
+    data = request.json
+    accepted = data.get('accepted', True)
+    edited_text = data.get('edited_text')
     conn = sqlite3.connect(DB)
     c = conn.cursor()
-    c.execute('UPDATE suggestions SET accepted = ? WHERE id = ?', (1 if accepted else 0, suggestion_id))
+    if edited_text:
+        c.execute('UPDATE suggestions SET accepted=?, suggested=? WHERE id=?',
+                  (1 if accepted else 0, edited_text, suggestion_id))
+    else:
+        c.execute('UPDATE suggestions SET accepted=? WHERE id=?',
+                  (1 if accepted else 0, suggestion_id))
     conn.commit()
     conn.close()
     return jsonify({'success': True})
