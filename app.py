@@ -157,7 +157,9 @@ def suggest_changes(job_id):
 
     company, position, notes, reqs_json = job
     requirements = json.loads(reqs_json) if reqs_json else []
-    resume_content = resume_row[0]
+    # Strip HTML tags so Claude receives clean plain text
+    import re
+    resume_content = re.sub(r'<[^>]+>', '', resume_row[0]).strip()
 
     api_key = os.environ.get('ANTHROPIC_API_KEY')
     if not api_key:
@@ -238,12 +240,20 @@ def view_resume(job_id):
     if not resume_row or not resume_row[0]:
         return '<p style="font-family:sans-serif;padding:40px;">No resume saved yet. Go back and add your resume template first.</p>', 404
 
-    content = resume_row[0]
+    import re
+    html_content = resume_row[0]
+    # Apply accepted suggestions on plain text then re-embed in HTML
+    plain = re.sub(r'<[^>]+>', '', html_content).strip()
     for original, suggested in accepted:
         if original:
-            content = content.replace(original, suggested)
+            plain = plain.replace(original, suggested)
         else:
-            content = suggested + '\n\n' + content
+            plain = suggested + '\n\n' + plain
+    # Convert back to basic HTML paragraphs if suggestions were applied
+    if accepted:
+        content = ''.join(f'<p>{line}</p>' if line.strip() else '' for line in plain.split('\n'))
+    else:
+        content = html_content
 
     company = job[0] if job else ''
     position = job[1] if job else ''
