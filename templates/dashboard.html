@@ -666,10 +666,15 @@
                 ${app.applied_date ? `<div style="font-size:0.8em;color:#666;">Applied: ${app.applied_date}</div>` : ''}
                 ${app.notes ? `<div class="card-notes">${app.notes}</div>` : ''}
                 <div class="action-buttons" style="margin-top:10px;flex-wrap:wrap;gap:5px;">
-                    ${app.job_url && app.job_url !== '#' ? `<a class="btn btn-primary" href="${app.job_url}" target="_blank">🔗 Job</a>` : ''}
+                    <a class="btn btn-primary" id="job-link-${app.id}" href="${app.job_url && app.job_url !== '#' ? app.job_url : '#'}" target="_blank" style="${!app.job_url || app.job_url === '#' ? 'opacity:0.5;' : ''}">🔗 Job</a>
+                    <button class="btn" style="background:#a0aec0;color:white;font-size:0.7em;padding:4px 8px;" onclick="editJobUrl(${app.id})">✏️</button>
                     <button class="btn btn-success" onclick="submitApplication(${app.id})">📤 Apply</button>
                     <button class="btn" style="background:#764ba2;color:white;" onclick="optimizeResume(${app.id}, '${app.company}', '${app.position}')">✨ Optimize</button>
                     <a class="btn" style="background:#4a5568;color:white;" href="/resume/${app.id}" target="_blank">📄 PDF</a>
+                </div>
+                <div id="url-edit-${app.id}" style="display:none;margin-top:8px;">
+                    <input type="url" id="url-input-${app.id}" placeholder="Paste real job URL here" style="width:100%;padding:5px 8px;border:1px solid #e2e8f0;border-radius:6px;font-size:0.8em;box-sizing:border-box;">
+                    <button onclick="saveJobUrl(${app.id})" style="margin-top:4px;background:#48bb78;color:white;border:none;border-radius:6px;padding:5px 12px;cursor:pointer;font-size:0.8em;">Save URL</button>
                 </div>
             `;
 
@@ -718,6 +723,25 @@
             }
         }
         
+        function editJobUrl(appId) {
+            const panel = document.getElementById(`url-edit-${appId}`);
+            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+        }
+
+        async function saveJobUrl(appId) {
+            const url = document.getElementById(`url-input-${appId}`).value.trim();
+            if (!url) return;
+            await fetch('/api/update_url', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: appId, job_url: url })
+            });
+            const link = document.getElementById(`job-link-${appId}`);
+            link.href = url;
+            link.style.opacity = '1';
+            document.getElementById(`url-edit-${appId}`).style.display = 'none';
+        }
+
         function submitApplication(appId) {
             const card = document.querySelector(`[data-id="${appId}"]`);
             if (card) {

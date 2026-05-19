@@ -62,6 +62,16 @@ def move_application():
     conn.close()
     return jsonify({'success': True})
 
+@app.route('/api/update_url', methods=['POST'])
+def update_url():
+    data = request.json
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+    c.execute('UPDATE applications SET job_url=? WHERE id=?', (data['job_url'], data['id']))
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True})
+
 @app.route('/api/applications')
 def get_applications():
     conn = sqlite3.connect(DB)
